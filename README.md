@@ -54,7 +54,7 @@ All stored directly on the SD card. A 64GB card comfortably holds all of the abo
 
 ```bash
 # SSH into your Pi, then clone the repo
-git clone https://github.com/YOURUSERNAME/jaycamp.git
+git clone https://github.com/SanjayKotabagi/jaycamp.git
 cd jaycamp
 
 # Run the one-command installer
