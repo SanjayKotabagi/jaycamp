@@ -1,0 +1,12 @@
+[Unit]
+Description=Depot File Manager Backend
+After=network.target
+
+[Service]
+ExecStart=/usr/bin/python3 /home/pi/depot_server.py
+Restart=always
+User=pi
+WorkingDirectory=/home/pi
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,12 @@
+[Unit]
+Description=Mount USB drive %i
+After=local-fs.target
+
+[Service]
+Type=oneshot
+ExecStartPre=/bin/mkdir -p /mnt/%i
+ExecStart=/bin/mount /dev/%i /mnt/%i -o defaults,nofail
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target

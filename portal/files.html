@@ -1,0 +1,1238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DEPOT // File Manager</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne+Mono&family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #13100d;
+  --bg2: #1a1510;
+  --surface: #201a13;
+  --surface2: #271f16;
+  --border: #2e2318;
+  --border2: #3d3020;
+  --accent: #f0a500;
+  --accent2: #ffc94d;
+  --accent-dim: #3d2a00;
+  --danger: #e05252;
+  --success: #5ec27a;
+  --text: #ede0cb;
+  --text-dim: #8a7560;
+  --text-muted: #4a3d2d;
+  --mono: 'Syne Mono', monospace;
+  --display: 'Syne', sans-serif;
+  --body: 'DM Sans', sans-serif;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html, body {
+  height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--body);
+  overflow: hidden;
+}
+
+/* Texture */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 9999;
+}
+
+/* Layout */
+.app {
+  display: grid;
+  grid-template-rows: 56px 1fr;
+  grid-template-columns: 260px 1fr;
+  height: 100vh;
+}
+
+/* Topbar */
+.topbar {
+  grid-column: 1 / -1;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border2);
+  display: flex;
+  align-items: center;
+  padding: 0 24px;
+  gap: 24px;
+  position: relative;
+}
+
+.topbar::after {
+  content: '';
+  position: absolute;
+  bottom: -1px; left: 0;
+  width: 260px;
+  height: 2px;
+  background: var(--accent);
+}
+
+.brand {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.brand-name {
+  font-family: var(--display);
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--accent);
+  letter-spacing: -0.02em;
+  text-transform: uppercase;
+}
+
+.brand-sub {
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--text-dim);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+
+.topbar-center {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.breadcrumb {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--text-dim);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.breadcrumb span { color: var(--text); }
+.breadcrumb .sep { color: var(--text-muted); }
+
+.topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.topbar-stat {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--text-dim);
+  text-align: right;
+  line-height: 1.6;
+}
+
+.topbar-stat strong {
+  color: var(--accent);
+  font-weight: 400;
+}
+
+/* Sidebar */
+.sidebar {
+  background: var(--surface);
+  border-right: 1px solid var(--border2);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.sidebar-section {
+  padding: 20px 16px 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+.sidebar-label {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 12px;
+}
+
+/* Drive cards */
+.drive-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.drive-card {
+  border: 1px solid var(--border2);
+  background: var(--bg2);
+  padding: 10px 12px;
+  cursor: pointer;
+  transition: all 0.15s;
+  position: relative;
+  overflow: hidden;
+}
+
+.drive-card::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0;
+  width: 3px; height: 100%;
+  background: var(--border2);
+  transition: background 0.15s;
+}
+
+.drive-card:hover { background: var(--surface2); }
+.drive-card.active { border-color: var(--accent); background: var(--accent-dim); }
+.drive-card.active::before { background: var(--accent); }
+
+.drive-card.offline { opacity: 0.4; cursor: not-allowed; }
+
+.drive-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.drive-icon-name {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.drive-icon { font-size: 14px; }
+
+.drive-name {
+  font-family: var(--display);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.drive-status {
+  font-family: var(--mono);
+  font-size: 9px;
+  padding: 2px 6px;
+  border-radius: 2px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.drive-status.online { background: rgba(94,194,122,0.15); color: var(--success); }
+.drive-status.offline { background: rgba(224,82,82,0.1); color: var(--danger); }
+
+.drive-bar-bg {
+  height: 3px;
+  background: var(--border2);
+  border-radius: 2px;
+  overflow: hidden;
+  margin-bottom: 4px;
+}
+
+.drive-bar-fill {
+  height: 100%;
+  background: var(--accent);
+  border-radius: 2px;
+  transition: width 0.4s ease;
+}
+
+.drive-meta {
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--text-dim);
+}
+
+/* Nav links */
+.nav-links {
+  padding: 12px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  cursor: pointer;
+  border-radius: 2px;
+  transition: background 0.15s;
+  font-size: 13px;
+  color: var(--text-dim);
+  font-weight: 500;
+}
+
+.nav-item:hover { background: var(--surface2); color: var(--text); }
+.nav-item.active { background: var(--accent-dim); color: var(--accent); }
+.nav-item-icon { font-size: 14px; width: 18px; text-align: center; }
+
+/* Main content */
+.main {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--bg);
+}
+
+/* Toolbar */
+.toolbar {
+  padding: 12px 24px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--bg2);
+  flex-shrink: 0;
+}
+
+.btn {
+  font-family: var(--display);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 8px 16px;
+  border: 1px solid var(--border2);
+  background: var(--surface);
+  color: var(--text-dim);
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+
+.btn:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-dim); }
+
+.btn-primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--bg);
+}
+
+.btn-primary:hover { background: var(--accent2); border-color: var(--accent2); color: var(--bg); }
+
+.btn-danger { }
+.btn-danger:hover { border-color: var(--danger); color: var(--danger); background: rgba(224,82,82,0.08); }
+
+.toolbar-sep {
+  width: 1px;
+  height: 20px;
+  background: var(--border2);
+}
+
+.toolbar-right { margin-left: auto; display: flex; gap: 8px; }
+
+.view-toggle {
+  display: flex;
+  border: 1px solid var(--border2);
+}
+
+.view-btn {
+  padding: 7px 10px;
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 13px;
+  transition: all 0.15s;
+}
+
+.view-btn.active { background: var(--surface2); color: var(--accent); }
+
+/* Drop zone */
+.dropzone {
+  margin: 16px 24px;
+  border: 2px dashed var(--border2);
+  padding: 20px;
+  text-align: center;
+  transition: all 0.2s;
+  cursor: pointer;
+  flex-shrink: 0;
+  position: relative;
+  overflow: hidden;
+}
+
+.dropzone.dragover {
+  border-color: var(--accent);
+  background: var(--accent-dim);
+}
+
+.dropzone-content {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+}
+
+.dropzone-icon { font-size: 28px; }
+
+.dropzone-text { text-align: left; }
+
+.dropzone-title {
+  font-family: var(--display);
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 2px;
+}
+
+.dropzone-sub {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--text-dim);
+}
+
+.dropzone-target {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--accent);
+  margin-left: auto;
+  text-align: right;
+}
+
+#fileInput { display: none; }
+
+/* Upload progress */
+.upload-progress {
+  margin: 0 24px 8px;
+  display: none;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 120px;
+  overflow-y: auto;
+}
+
+.upload-progress.active { display: flex; }
+
+.progress-item {
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  padding: 8px 12px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  animation: slideIn 0.2s ease;
+}
+
+@keyframes slideIn {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.progress-name {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text);
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.progress-bar-wrap {
+  width: 120px;
+  height: 4px;
+  background: var(--border2);
+}
+
+.progress-bar-inner {
+  height: 100%;
+  background: var(--accent);
+  transition: width 0.3s;
+}
+
+.progress-pct {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--accent);
+  width: 32px;
+  text-align: right;
+}
+
+.progress-done { color: var(--success); }
+.progress-done .progress-bar-inner { background: var(--success); }
+
+/* File list */
+.file-area {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0 24px 24px;
+}
+
+.file-area::-webkit-scrollbar { width: 4px; }
+.file-area::-webkit-scrollbar-track { background: transparent; }
+.file-area::-webkit-scrollbar-thumb { background: var(--border2); }
+
+/* Column headers */
+.file-header {
+  display: grid;
+  grid-template-columns: 1fr 100px 120px 80px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 4px;
+  position: sticky;
+  top: 0;
+  background: var(--bg);
+  z-index: 10;
+}
+
+.file-header-cell {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.file-header-cell:hover { color: var(--text-dim); }
+
+/* File rows */
+.file-row {
+  display: grid;
+  grid-template-columns: 1fr 100px 120px 80px;
+  padding: 9px 12px;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  transition: background 0.1s;
+  align-items: center;
+  animation: fadeIn 0.2s ease both;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.file-row:hover { background: var(--surface); }
+.file-row.selected { background: var(--accent-dim); border-color: rgba(240,165,0,0.2); }
+
+.file-name-cell {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  overflow: hidden;
+}
+
+.file-type-icon { font-size: 16px; flex-shrink: 0; }
+
+.file-name {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.file-ext {
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--text-muted);
+  background: var(--border);
+  padding: 1px 5px;
+  margin-left: 4px;
+  flex-shrink: 0;
+}
+
+.file-size, .file-date, .file-actions {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text-dim);
+}
+
+.file-actions {
+  display: flex;
+  gap: 8px;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.file-row:hover .file-actions { opacity: 1; }
+
+.action-icon {
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  cursor: pointer;
+  font-size: 13px;
+  padding: 2px;
+  transition: color 0.15s;
+}
+
+.action-icon:hover { color: var(--accent); }
+.action-icon.del:hover { color: var(--danger); }
+
+/* Empty state */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  gap: 12px;
+  opacity: 0.5;
+}
+
+.empty-icon { font-size: 48px; }
+.empty-title { font-family: var(--display); font-size: 18px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; }
+.empty-sub { font-family: var(--mono); font-size: 11px; color: var(--text-dim); }
+
+/* Toast */
+.toast-wrap {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  z-index: 9998;
+}
+
+.toast {
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-left: 3px solid var(--accent);
+  padding: 12px 16px;
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--text);
+  min-width: 240px;
+  animation: toastIn 0.3s ease;
+  pointer-events: none;
+}
+
+.toast.error { border-left-color: var(--danger); }
+.toast.success { border-left-color: var(--success); }
+
+@keyframes toastIn {
+  from { opacity: 0; transform: translateX(20px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+/* New folder modal */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.7);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 9997;
+}
+
+.modal-overlay.active { display: flex; }
+
+.modal {
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  padding: 28px;
+  min-width: 320px;
+}
+
+.modal-title {
+  font-family: var(--display);
+  font-size: 18px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text);
+  margin-bottom: 20px;
+}
+
+.modal input {
+  width: 100%;
+  background: var(--bg2);
+  border: 1px solid var(--border2);
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 14px;
+  padding: 10px 14px;
+  outline: none;
+  margin-bottom: 16px;
+}
+
+.modal input:focus { border-color: var(--accent); }
+
+.modal-actions { display: flex; gap: 8px; justify-content: flex-end; }
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border2); }
+
+@media (max-width: 600px) {
+  .app { grid-template-columns: 1fr; grid-template-rows: 56px auto 1fr; }
+  .sidebar { grid-row: 2; max-height: 200px; overflow-y: auto; border-right: none; border-bottom: 1px solid var(--border2); }
+  .topbar::after { width: 100%; }
+  .file-header, .file-row { grid-template-columns: 1fr 80px 60px; }
+  .file-date { display: none; }
+}
+</style>
+</head>
+<body>
+
+<div class="app">
+
+  <!-- Topbar -->
+  <div class="topbar">
+    <div class="brand">
+      <div class="brand-name">DEPOT</div>
+      <div class="brand-sub">// file station</div>
+    </div>
+    <div class="topbar-center">
+      <div class="breadcrumb" id="breadcrumb">
+        <span id="currentDriveName">—</span>
+        <span class="sep">/</span>
+        <span id="currentPath">select a drive</span>
+      </div>
+    </div>
+    <div class="topbar-right">
+      <div class="topbar-stat" id="driveStatTop">
+        <div>DRIVE <strong id="statName">—</strong></div>
+        <div>FREE <strong id="statFree">—</strong></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <div class="sidebar-section">
+      <div class="sidebar-label">// storage drives</div>
+      <div class="drive-list" id="driveList">
+        <div style="font-family:var(--mono);font-size:11px;color:var(--text-muted);padding:8px;">scanning...</div>
+      </div>
+    </div>
+
+    <div class="nav-links">
+      <div class="sidebar-label" style="padding: 0 10px 4px;">// quick access</div>
+      <div class="nav-item active" onclick="setView('all')">
+        <span class="nav-item-icon">📁</span> All Files
+      </div>
+      <div class="nav-item" onclick="setView('images')">
+        <span class="nav-item-icon">🖼️</span> Images
+      </div>
+      <div class="nav-item" onclick="setView('docs')">
+        <span class="nav-item-icon">📄</span> Documents
+      </div>
+      <div class="nav-item" onclick="setView('video')">
+        <span class="nav-item-icon">🎬</span> Videos
+      </div>
+      <div class="nav-item" onclick="setView('other')">
+        <span class="nav-item-icon">📦</span> Other
+      </div>
+    </div>
+  </div>
+
+  <!-- Main -->
+  <div class="main">
+    <div class="toolbar">
+      <button class="btn btn-primary" onclick="document.getElementById('fileInput').click()">⬆ Upload</button>
+      <button class="btn" onclick="showNewFolderModal()">+ New Folder</button>
+      <div class="toolbar-sep"></div>
+      <button class="btn" onclick="refreshDrives()">↺ Refresh Drives</button>
+      <button class="btn btn-danger" id="deleteBtn" onclick="deleteSelected()" style="display:none">✕ Delete</button>
+      <div class="toolbar-right">
+        <div class="view-toggle">
+          <button class="view-btn active" onclick="setViewMode('list')" title="List">☰</button>
+          <button class="view-btn" onclick="setViewMode('grid')" title="Grid">⊞</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Drop zone -->
+    <div class="dropzone" id="dropzone" onclick="document.getElementById('fileInput').click()">
+      <div class="dropzone-content">
+        <div class="dropzone-icon">📥</div>
+        <div class="dropzone-text">
+          <div class="dropzone-title">Drop files here or click to upload</div>
+          <div class="dropzone-sub">Any file type — no size limit</div>
+        </div>
+        <div class="dropzone-target" id="dropTarget">
+          TARGET<br><span id="dropTargetName">— none selected —</span>
+        </div>
+      </div>
+    </div>
+    <input type="file" id="fileInput" multiple>
+
+    <!-- Upload progress -->
+    <div class="upload-progress" id="uploadProgress"></div>
+
+    <!-- File list -->
+    <div class="file-area">
+      <div class="file-header">
+        <div class="file-header-cell" onclick="sortBy('name')">NAME</div>
+        <div class="file-header-cell" onclick="sortBy('size')">SIZE</div>
+        <div class="file-header-cell" onclick="sortBy('date')">MODIFIED</div>
+        <div class="file-header-cell">ACTIONS</div>
+      </div>
+      <div id="fileList">
+        <div class="empty-state">
+          <div class="empty-icon">💾</div>
+          <div class="empty-title">No Drive Selected</div>
+          <div class="empty-sub">Choose a drive from the sidebar to browse files</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Toast container -->
+<div class="toast-wrap" id="toastWrap"></div>
+
+<!-- New Folder Modal -->
+<div class="modal-overlay" id="folderModal">
+  <div class="modal">
+    <div class="modal-title">New Folder</div>
+    <input type="text" id="folderName" placeholder="folder name..." maxlength="64">
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="createFolder()">Create</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// CONFIG — adjust API base if your backend runs on diff port
+// ============================================================
+const API = 'http://192.168.4.1:5000';
+
+// ============================================================
+// STATE
+// ============================================================
+let drives = [];
+let selectedDrive = null;
+let currentPath = '/';
+let files = [];
+let selectedFiles = new Set();
+let currentFilter = 'all';
+let sortKey = 'name';
+let sortDir = 1;
+
+// ============================================================
+// INIT
+// ============================================================
+window.addEventListener('load', () => {
+  refreshDrives();
+  setupDragDrop();
+  document.getElementById('fileInput').addEventListener('change', e => {
+    if (e.target.files.length) handleUpload(Array.from(e.target.files));
+    e.target.value = '';
+  });
+  document.getElementById('folderName').addEventListener('keydown', e => {
+    if (e.key === 'Enter') createFolder();
+    if (e.key === 'Escape') closeModal();
+  });
+});
+
+// ============================================================
+// DRIVES
+// ============================================================
+async function refreshDrives() {
+  const list = document.getElementById('driveList');
+  list.innerHTML = '<div style="font-family:var(--mono);font-size:11px;color:var(--text-muted);padding:8px;">scanning...</div>';
+  try {
+    const res = await fetch(`${API}/drives`);
+    drives = await res.json();
+    renderDrives();
+  } catch(e) {
+    // Demo mode — show fake drives if backend not connected
+    drives = [
+      { id: 'sd', name: 'SD Card', path: '/home/pi', used: 8.2, total: 32, online: true, icon: '💾' },
+      { id: 'usb1', name: 'USB Drive 1', path: '/mnt/usb1', used: 45.6, total: 128, online: true, icon: '🔌' },
+      { id: 'usb2', name: 'USB Drive 2', path: '/mnt/usb2', used: 0, total: 256, online: false, icon: '🔌' },
+    ];
+    renderDrives();
+  }
+}
+
+function renderDrives() {
+  const list = document.getElementById('driveList');
+  if (!drives.length) {
+    list.innerHTML = '<div style="font-family:var(--mono);font-size:11px;color:var(--text-muted);padding:8px;">no drives found</div>';
+    return;
+  }
+  list.innerHTML = drives.map(d => {
+    const pct = d.total ? Math.round((d.used / d.total) * 100) : 0;
+    const usedStr = formatSize(d.used * 1024 * 1024 * 1024);
+    const totalStr = formatSize(d.total * 1024 * 1024 * 1024);
+    const isActive = selectedDrive && selectedDrive.id === d.id;
+    return `
+    <div class="drive-card ${isActive ? 'active' : ''} ${d.online ? '' : 'offline'}"
+         onclick="${d.online ? `selectDrive('${d.id}')` : ''}">
+      <div class="drive-top">
+        <div class="drive-icon-name">
+          <span class="drive-icon">${d.icon || '💾'}</span>
+          <span class="drive-name">${d.name}</span>
+        </div>
+        <span class="drive-status ${d.online ? 'online' : 'offline'}">${d.online ? 'RDY' : 'OFF'}</span>
+      </div>
+      <div class="drive-bar-bg">
+        <div class="drive-bar-fill" style="width:${pct}%"></div>
+      </div>
+      <div class="drive-meta">
+        <span>${usedStr} used</span>
+        <span>${totalStr} total</span>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function selectDrive(id) {
+  selectedDrive = drives.find(d => d.id === id);
+  currentPath = '/';
+  document.getElementById('currentDriveName').textContent = selectedDrive.name;
+  document.getElementById('currentPath').textContent = currentPath;
+  document.getElementById('dropTargetName').textContent = selectedDrive.name;
+  document.getElementById('statName').textContent = selectedDrive.name;
+  document.getElementById('statFree').textContent = formatSize((selectedDrive.total - selectedDrive.used) * 1024*1024*1024);
+  renderDrives();
+  loadFiles();
+}
+
+// ============================================================
+// FILES
+// ============================================================
+async function loadFiles() {
+  if (!selectedDrive) return;
+  const list = document.getElementById('fileList');
+  list.innerHTML = '<div style="font-family:var(--mono);font-size:12px;color:var(--text-muted);padding:20px;">loading...</div>';
+  try {
+    const res = await fetch(`${API}/files?drive=${selectedDrive.id}&path=${encodeURIComponent(currentPath)}`);
+    files = await res.json();
+  } catch(e) {
+    // Demo files
+    files = [
+      { name: 'Documents', type: 'dir', size: 0, modified: '2025-01-15T10:30:00' },
+      { name: 'Photos', type: 'dir', size: 0, modified: '2025-02-01T08:00:00' },
+      { name: 'camp_notes.txt', type: 'file', size: 4096, modified: '2025-02-10T14:22:00' },
+      { name: 'map_route.gpx', type: 'file', size: 28400, modified: '2025-02-08T09:11:00' },
+      { name: 'sunset.jpg', type: 'file', size: 3842048, modified: '2025-01-30T18:45:00' },
+      { name: 'field_guide.pdf', type: 'file', size: 15728640, modified: '2025-01-20T11:00:00' },
+      { name: 'backup.zip', type: 'file', size: 52428800, modified: '2025-01-05T07:30:00' },
+    ];
+  }
+  selectedFiles.clear();
+  renderFiles();
+}
+
+function renderFiles() {
+  const list = document.getElementById('fileList');
+  let filtered = files.filter(f => {
+    if (currentFilter === 'all') return true;
+    if (currentFilter === 'images') return /\.(jpg|jpeg|png|gif|webp|bmp|svg)$/i.test(f.name);
+    if (currentFilter === 'docs') return /\.(pdf|doc|docx|txt|md|odt|rtf|csv|xls|xlsx)$/i.test(f.name);
+    if (currentFilter === 'video') return /\.(mp4|mkv|avi|mov|webm|flv)$/i.test(f.name);
+    if (f.type === 'dir') return true;
+    return !/\.(jpg|jpeg|png|gif|webp|bmp|svg|pdf|doc|docx|txt|md|mp4|mkv|avi|mov)$/i.test(f.name);
+  });
+
+  filtered.sort((a, b) => {
+    if (a.type === 'dir' && b.type !== 'dir') return -1;
+    if (a.type !== 'dir' && b.type === 'dir') return 1;
+    let av = a[sortKey], bv = b[sortKey];
+    if (sortKey === 'size') { av = a.size; bv = b.size; }
+    if (av < bv) return -sortDir;
+    if (av > bv) return sortDir;
+    return 0;
+  });
+
+  if (!filtered.length) {
+    list.innerHTML = `<div class="empty-state">
+      <div class="empty-icon">📂</div>
+      <div class="empty-title">Empty Folder</div>
+      <div class="empty-sub">Upload files or create a new folder</div>
+    </div>`;
+    return;
+  }
+
+  list.innerHTML = filtered.map((f, i) => {
+    const icon = getIcon(f);
+    const ext = f.type !== 'dir' ? f.name.split('.').pop().toUpperCase() : '';
+    const baseName = f.type !== 'dir' && f.name.includes('.') ? f.name.slice(0, f.name.lastIndexOf('.')) : f.name;
+    const sizeStr = f.type === 'dir' ? '—' : formatSize(f.size);
+    const dateStr = new Date(f.modified).toLocaleDateString('en-GB', { day:'2-digit', month:'short', year:'2-digit' });
+    const isSelected = selectedFiles.has(f.name);
+    return `<div class="file-row ${isSelected ? 'selected' : ''}" 
+               onclick="toggleSelect('${f.name}', event)"
+               ondblclick="${f.type === 'dir' ? `openDir('${f.name}')` : `downloadFile('${f.name}')`}"
+               style="animation-delay:${i * 0.02}s">
+      <div class="file-name-cell">
+        <span class="file-type-icon">${icon}</span>
+        <span class="file-name">${baseName}</span>
+        ${ext ? `<span class="file-ext">${ext}</span>` : ''}
+      </div>
+      <div class="file-size">${sizeStr}</div>
+      <div class="file-date">${dateStr}</div>
+      <div class="file-actions">
+        ${f.type !== 'dir' ? `<button class="action-icon" onclick="downloadFile('${f.name}', event)" title="Download">↓</button>` : ''}
+        <button class="action-icon del" onclick="deleteFile('${f.name}', event)" title="Delete">✕</button>
+      </div>
+    </div>`;
+  }).join('');
+
+  updateDeleteBtn();
+}
+
+function getIcon(f) {
+  if (f.type === 'dir') return '📁';
+  const ext = f.name.split('.').pop().toLowerCase();
+  const map = {
+    jpg:'🖼️', jpeg:'🖼️', png:'🖼️', gif:'🖼️', webp:'🖼️', svg:'🖼️',
+    mp4:'🎬', mkv:'🎬', avi:'🎬', mov:'🎬', webm:'🎬',
+    mp3:'🎵', wav:'🎵', flac:'🎵', ogg:'🎵',
+    pdf:'📄', doc:'📝', docx:'📝', txt:'📝', md:'📝',
+    zip:'📦', tar:'📦', gz:'📦', rar:'📦',
+    py:'💻', js:'💻', html:'💻', css:'💻', sh:'💻',
+    gpx:'🗺️', kml:'🗺️',
+  };
+  return map[ext] || '📎';
+}
+
+function formatSize(bytes) {
+  if (!bytes) return '0 B';
+  const units = ['B','KB','MB','GB','TB'];
+  let i = 0;
+  while (bytes >= 1024 && i < units.length - 1) { bytes /= 1024; i++; }
+  return `${bytes.toFixed(i > 0 ? 1 : 0)} ${units[i]}`;
+}
+
+// ============================================================
+// SELECTION
+// ============================================================
+function toggleSelect(name, e) {
+  if (e.target.classList.contains('action-icon')) return;
+  if (selectedFiles.has(name)) selectedFiles.delete(name);
+  else selectedFiles.add(name);
+  renderFiles();
+  updateDeleteBtn();
+}
+
+function updateDeleteBtn() {
+  const btn = document.getElementById('deleteBtn');
+  btn.style.display = selectedFiles.size ? 'block' : 'none';
+  if (selectedFiles.size) btn.textContent = `✕ Delete (${selectedFiles.size})`;
+}
+
+function setView(filter) {
+  currentFilter = filter;
+  document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+  event.currentTarget.classList.add('active');
+  renderFiles();
+}
+
+function setViewMode(mode) {
+  document.querySelectorAll('.view-btn').forEach(b => b.classList.remove('active'));
+  event.currentTarget.classList.add('active');
+  // Grid mode would require additional CSS — simplified for now
+}
+
+function sortBy(key) {
+  if (sortKey === key) sortDir *= -1;
+  else { sortKey = key; sortDir = 1; }
+  renderFiles();
+}
+
+// ============================================================
+// NAVIGATION
+// ============================================================
+function openDir(name) {
+  currentPath = currentPath === '/' ? '/' + name : currentPath + '/' + name;
+  document.getElementById('currentPath').textContent = currentPath;
+  loadFiles();
+}
+
+// ============================================================
+// UPLOAD
+// ============================================================
+function setupDragDrop() {
+  const zone = document.getElementById('dropzone');
+  zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('dragover'); });
+  zone.addEventListener('dragleave', () => zone.classList.remove('dragover'));
+  zone.addEventListener('drop', e => {
+    e.preventDefault();
+    zone.classList.remove('dragover');
+    const dropped = Array.from(e.dataTransfer.files);
+    if (dropped.length) handleUpload(dropped);
+  });
+}
+
+async function handleUpload(fileList) {
+  if (!selectedDrive) {
+    toast('Select a drive first!', 'error');
+    return;
+  }
+  const progressWrap = document.getElementById('uploadProgress');
+  progressWrap.classList.add('active');
+
+  for (const file of fileList) {
+    const id = 'p_' + Date.now() + Math.random().toString(36).slice(2);
+    const item = document.createElement('div');
+    item.className = 'progress-item';
+    item.id = id;
+    item.innerHTML = `
+      <span class="progress-name">${file.name}</span>
+      <div class="progress-bar-wrap"><div class="progress-bar-inner" style="width:0%"></div></div>
+      <span class="progress-pct">0%</span>`;
+    progressWrap.prepend(item);
+
+    try {
+      await uploadFile(file, id);
+    } catch(e) {
+      document.getElementById(id).querySelector('.progress-pct').textContent = 'ERR';
+      toast(`Failed: ${file.name}`, 'error');
+    }
+  }
+
+  setTimeout(() => {
+    progressWrap.classList.remove('active');
+    progressWrap.innerHTML = '';
+  }, 3000);
+
+  loadFiles();
+}
+
+function uploadFile(file, progressId) {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('drive', selectedDrive.id);
+    formData.append('path', currentPath);
+
+    xhr.upload.addEventListener('progress', e => {
+      if (e.lengthComputable) {
+        const pct = Math.round((e.loaded / e.total) * 100);
+        const el = document.getElementById(progressId);
+        if (el) {
+          el.querySelector('.progress-bar-inner').style.width = pct + '%';
+          el.querySelector('.progress-pct').textContent = pct + '%';
+        }
+      }
+    });
+
+    xhr.addEventListener('load', () => {
+      const el = document.getElementById(progressId);
+      if (el) {
+        el.classList.add('progress-done');
+        el.querySelector('.progress-bar-inner').style.width = '100%';
+        el.querySelector('.progress-pct').textContent = '✓';
+      }
+      toast(`Uploaded: ${file.name}`, 'success');
+      resolve();
+    });
+
+    xhr.addEventListener('error', () => reject(new Error('Upload failed')));
+    xhr.open('POST', `${API}/upload`);
+    xhr.send(formData);
+  });
+}
+
+// ============================================================
+// FILE ACTIONS
+// ============================================================
+async function downloadFile(name, e) {
+  if (e) e.stopPropagation();
+  if (!selectedDrive) return;
+  const url = `${API}/download?drive=${selectedDrive.id}&path=${encodeURIComponent(currentPath)}&file=${encodeURIComponent(name)}`;
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = name;
+  a.click();
+}
+
+async function deleteFile(name, e) {
+  if (e) e.stopPropagation();
+  if (!confirm(`Delete "${name}"?`)) return;
+  try {
+    await fetch(`${API}/delete`, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ drive: selectedDrive.id, path: currentPath, name })
+    });
+    files = files.filter(f => f.name !== name);
+    renderFiles();
+    toast(`Deleted: ${name}`);
+  } catch(e) {
+    toast('Delete failed', 'error');
+  }
+}
+
+async function deleteSelected() {
+  if (!selectedFiles.size) return;
+  if (!confirm(`Delete ${selectedFiles.size} item(s)?`)) return;
+  for (const name of selectedFiles) {
+    try {
+      await fetch(`${API}/delete`, {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ drive: selectedDrive.id, path: currentPath, name })
+      });
+      files = files.filter(f => f.name !== name);
+    } catch(e) {}
+  }
+  selectedFiles.clear();
+  renderFiles();
+  toast(`Deleted ${selectedFiles.size} items`);
+}
+
+// ============================================================
+// FOLDER
+// ============================================================
+function showNewFolderModal() {
+  document.getElementById('folderModal').classList.add('active');
+  document.getElementById('folderName').focus();
+}
+
+function closeModal() {
+  document.getElementById('folderModal').classList.remove('active');
+  document.getElementById('folderName').value = '';
+}
+
+async function createFolder() {
+  const name = document.getElementById('folderName').value.trim();
+  if (!name) return;
+  if (!selectedDrive) { toast('Select a drive first', 'error'); return; }
+  try {
+    await fetch(`${API}/mkdir`, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ drive: selectedDrive.id, path: currentPath, name })
+    });
+    closeModal();
+    loadFiles();
+    toast(`Created: ${name}`);
+  } catch(e) {
+    // Demo mode
+    files.unshift({ name, type: 'dir', size: 0, modified: new Date().toISOString() });
+    closeModal();
+    renderFiles();
+    toast(`Created: ${name}`);
+  }
+}
+
+// ============================================================
+// TOAST
+// ============================================================
+function toast(msg, type = '') {
+  const wrap = document.getElementById('toastWrap');
+  const el = document.createElement('div');
+  el.className = `toast ${type}`;
+  el.textContent = msg;
+  wrap.appendChild(el);
+  setTimeout(() => el.remove(), 3000);
+}
+</script>
+</body>
+</html>

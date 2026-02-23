@@ -1,0 +1,8 @@
+[Unit]
+Description=Unmount USB drive %i
+
+[Service]
+Type=oneshot
+ExecStart=/bin/umount /mnt/%i
+ExecStartPost=/bin/rmdir /mnt/%i
+RemainAfterExit=yes

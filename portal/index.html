@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Jay CAMP // Offline Portal</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Barlow+Condensed:wght@300;400;600;700;900&family=Barlow:wght@300;400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0c0b;
+    --bg2: #0f1210;
+    --surface: #141a15;
+    --border: #1e2b1f;
+    --accent: #4ade80;
+    --accent2: #86efac;
+    --dim: #2d3d2e;
+    --muted: #4a5e4b;
+    --text: #d4e8d5;
+    --text-dim: #7a9b7c;
+    --mono: 'Share Tech Mono', monospace;
+    --sans: 'Barlow Condensed', sans-serif;
+    --body: 'Barlow', sans-serif;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--body);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 1000;
+    opacity: 0.4;
+  }
+
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(var(--border) 1px, transparent 1px),
+      linear-gradient(90deg, var(--border) 1px, transparent 1px);
+    background-size: 40px 40px;
+    opacity: 0.3;
+    pointer-events: none;
+  }
+
+  .container {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 0 24px;
+    position: relative;
+    z-index: 1;
+  }
+
+  header {
+    padding: 32px 0 24px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .header-inner {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+
+  .logo-tag {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--accent);
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+    opacity: 0.8;
+  }
+
+  .logo {
+    font-family: var(--sans);
+    font-size: clamp(36px, 8vw, 64px);
+    font-weight: 900;
+    letter-spacing: -0.02em;
+    line-height: 0.9;
+    color: var(--text);
+    text-transform: uppercase;
+  }
+
+  .logo span { color: var(--accent); }
+
+  .logo-sub {
+    font-family: var(--sans);
+    font-size: 13px;
+    font-weight: 300;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-top: 6px;
+  }
+
+  .status-bar {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-dim);
+    text-align: right;
+    line-height: 1.8;
+  }
+
+  .status-dot {
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    background: var(--accent);
+    border-radius: 50%;
+    margin-right: 6px;
+    animation: pulse 2s infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+
+  .search-section {
+    padding: 40px 0 32px;
+    animation: fadeUp 0.6s ease both;
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .search-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+
+  .search-wrap {
+    display: flex;
+    gap: 0;
+  }
+
+  .search-prefix {
+    background: var(--dim);
+    border: 1px solid var(--border);
+    border-right: none;
+    padding: 0 16px;
+    display: flex;
+    align-items: center;
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--accent);
+    letter-spacing: 0.05em;
+  }
+
+  #searchInput {
+    flex: 1;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-right: none;
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 15px;
+    padding: 14px 20px;
+    outline: none;
+    transition: border-color 0.2s, background 0.2s;
+  }
+
+  #searchInput:focus {
+    border-color: var(--accent);
+    background: var(--bg2);
+  }
+
+  #searchInput::placeholder { color: var(--muted); }
+
+  .search-btn {
+    background: var(--accent);
+    border: 1px solid var(--accent);
+    color: var(--bg);
+    font-family: var(--sans);
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    padding: 0 28px;
+    cursor: pointer;
+    transition: background 0.2s, color 0.2s;
+  }
+
+  .search-btn:hover {
+    background: var(--bg);
+    color: var(--accent);
+  }
+
+  .search-results { margin-top: 16px; display: none; }
+  .search-results.active { display: block; }
+
+  .result-item {
+    border: 1px solid var(--border);
+    border-top: none;
+    padding: 14px 20px;
+    cursor: pointer;
+    transition: background 0.15s;
+    display: flex;
+    gap: 16px;
+    align-items: flex-start;
+  }
+
+  .result-item:first-child { border-top: 1px solid var(--border); }
+  .result-item:hover { background: var(--surface); }
+
+  .result-source {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--accent);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    white-space: nowrap;
+    padding-top: 2px;
+    min-width: 80px;
+  }
+
+  .result-title {
+    font-family: var(--sans);
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 2px;
+  }
+
+  .result-snippet {
+    font-size: 13px;
+    color: var(--text-dim);
+    line-height: 1.5;
+  }
+
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 20px;
+    animation: fadeUp 0.6s 0.1s ease both;
+  }
+
+  .section-title {
+    font-family: var(--sans);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  .section-line {
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  .library-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 1px;
+    background: var(--border);
+    border: 1px solid var(--border);
+    margin-bottom: 48px;
+    animation: fadeUp 0.6s 0.2s ease both;
+  }
+
+  .lib-card {
+    background: var(--bg);
+    padding: 24px 20px;
+    cursor: pointer;
+    transition: background 0.2s;
+    text-decoration: none;
+    display: block;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .lib-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0;
+    width: 3px;
+    height: 100%;
+    background: var(--accent);
+    transform: scaleY(0);
+    transition: transform 0.2s;
+    transform-origin: bottom;
+  }
+
+  .lib-card:hover { background: var(--surface); }
+  .lib-card:hover::before { transform: scaleY(1); }
+
+  .lib-icon {
+    font-size: 24px;
+    margin-bottom: 12px;
+    display: block;
+  }
+
+  .lib-name {
+    font-family: var(--sans);
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text);
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    margin-bottom: 4px;
+  }
+
+  .lib-desc {
+    font-size: 12px;
+    color: var(--text-dim);
+    line-height: 1.4;
+    margin-bottom: 12px;
+  }
+
+  .lib-tag {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--accent);
+    letter-spacing: 0.1em;
+  }
+
+  /* TED section — spans full width with sub-cards */
+  .ted-section {
+    background: var(--bg);
+    padding: 20px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .ted-section::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0;
+    width: 3px;
+    height: 100%;
+    background: var(--accent);
+    transform: scaleY(0);
+    transition: transform 0.2s;
+    transform-origin: bottom;
+  }
+
+  .ted-section:hover { background: var(--surface); }
+  .ted-section:hover::before { transform: scaleY(1); }
+
+  .ted-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 14px;
+  }
+
+  .ted-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .ted-chip {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--accent);
+    background: var(--dim);
+    border: 1px solid var(--border);
+    padding: 4px 10px;
+    cursor: pointer;
+    text-decoration: none;
+    transition: background 0.15s, color 0.15s;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+
+  .ted-chip:hover {
+    background: var(--accent);
+    color: var(--bg);
+  }
+
+  .bottom-strip {
+    border-top: 1px solid var(--border);
+    padding: 20px 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+    animation: fadeUp 0.6s 0.3s ease both;
+  }
+
+  .strip-left {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.05em;
+  }
+
+  .strip-right {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+  }
+
+  .strip-right span { color: var(--accent); }
+
+  .loading {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--accent);
+    padding: 20px 0;
+    display: none;
+  }
+  .loading.active { display: block; }
+
+  @media (max-width: 480px) {
+    .library-grid { grid-template-columns: 1fr 1fr; }
+    .search-prefix { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <header>
+    <div class="header-inner">
+      <div class="logo-block">
+        <div class="logo-tag">// offline system v1.0</div>
+        <div class="logo">Jay<span>&nbsp;CAMP</span></div>
+        <div class="logo-sub">Personal Knowledge Station</div>
+      </div>
+      <div class="status-bar">
+        <div><span class="status-dot"></span>SYSTEM ONLINE</div>
+        <div id="clock">--:--:--</div>
+        <div id="dateDisplay">--- -- ----</div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Search -->
+  <div class="search-section">
+    <div class="search-label">// search across all local sources</div>
+    <div class="search-wrap">
+      <div class="search-prefix">QUERY&gt;</div>
+      <input type="text" id="searchInput" placeholder="search wikipedia, ted, medicine, cooking..." autocomplete="off">
+      <button class="search-btn" onclick="doSearch()">FIND</button>
+    </div>
+    <div class="loading" id="loading">searching local index...</div>
+    <div class="search-results" id="searchResults"></div>
+  </div>
+
+  <!-- Library -->
+  <div class="section-header">
+    <div class="section-title">// library index</div>
+    <div class="section-line"></div>
+  </div>
+
+  <div class="library-grid">
+
+    <!-- Wikipedia -->
+    <a class="lib-card" href="http://192.168.4.1:8080/wikipedia_en_top_maxi_2025-12">
+      <span class="lib-icon">🌐</span>
+      <div class="lib-name">Wikipedia</div>
+      <div class="lib-desc">Top 100,000 English articles — science, history, people, everything</div>
+      <div class="lib-tag">ENCYCLOPEDIA</div>
+    </a>
+
+    <!-- MedlinePlus -->
+    <a class="lib-card" href="http://192.168.4.1:8080/medlineplus.gov_en_all_2025-01">
+      <span class="lib-icon">🏥</span>
+      <div class="lib-name">MedlinePlus</div>
+      <div class="lib-desc">Medical encyclopedia, drug info, health topics from NIH</div>
+      <div class="lib-tag">HEALTH</div>
+    </a>
+
+    <!-- Military Medicine -->
+    <a class="lib-card" href="http://192.168.4.1:8080/fas-military-medicine_en_2025-06">
+      <span class="lib-icon">🩹</span>
+      <div class="lib-name">Field Medicine</div>
+      <div class="lib-desc">Military medicine & first aid — essential for remote areas</div>
+      <div class="lib-tag">SURVIVAL</div>
+    </a>
+
+    <!-- FOSS Cooking -->
+    <a class="lib-card" href="http://192.168.4.1:8080/foss.cooking_en_all_2026-02">
+      <span class="lib-icon">🍳</span>
+      <div class="lib-name">Cooking</div>
+      <div class="lib-desc">FOSS Cooking — recipes and food guides for camp cooking</div>
+      <div class="lib-tag">RECIPES</div>
+    </a>
+
+    <!-- Anonymous Planet -->
+    <a class="lib-card" href="http://192.168.4.1:8080/anonymousplanet_en_all_2026-02">
+      <span class="lib-icon">🔒</span>
+      <div class="lib-name">Anon Planet</div>
+      <div class="lib-desc">Privacy, security & anonymity guides — digital self defence</div>
+      <div class="lib-tag">PRIVACY</div>
+    </a>
+
+    <!-- Restarters -->
+    <a class="lib-card" href="http://192.168.4.1:8080/restarters_en_all_maxi_2026-01">
+      <span class="lib-icon">🔨</span>
+      <div class="lib-name">Restarters</div>
+      <div class="lib-desc">Repair guides — fix electronics, appliances and gear</div>
+      <div class="lib-tag">REPAIR</div>
+    </a>
+
+    <!-- WikiVoyage -->
+    <a class="lib-card" href="http://192.168.4.1:8080/wikivoyage_en_all_nopic">
+      <span class="lib-icon">🗺️</span>
+      <div class="lib-name">WikiVoyage</div>
+      <div class="lib-desc">Travel guides for countries, cities, trails and destinations</div>
+      <div class="lib-tag">TRAVEL</div>
+    </a>
+
+    <!-- FreeCodeCamp -->
+    <a class="lib-card" href="http://192.168.4.1:8080/freecodecamp_en_all_2025-11">
+      <span class="lib-icon">💻</span>
+      <div class="lib-name">FreeCodeCamp</div>
+      <div class="lib-desc">Learn coding — HTML, CSS, JavaScript, Python and more</div>
+      <div class="lib-tag">CODING</div>
+    </a>
+
+    <!-- TED — full width spanning card with chips -->
+    <div class="ted-section" style="grid-column: 1 / -1;">
+      <div class="ted-header">
+        <span style="font-size:24px;">🎤</span>
+        <div>
+          <div class="lib-name">TED Talks</div>
+          <div class="lib-desc" style="margin-bottom:0;">Ideas worth spreading — browse by category</div>
+        </div>
+        <div class="lib-tag" style="margin-left:auto;">IDEAS</div>
+      </div>
+      <div class="ted-chips">
+        <a class="ted-chip" href="http://192.168.4.1:8080/ted_mul_entrepreneur_2026-01">Entrepreneur</a>
+        <a class="ted-chip" href="http://192.168.4.1:8080/ted_mul_ideas_2026-01">Ideas</a>
+        <a class="ted-chip" href="http://192.168.4.1:8080/ted_mul_investing_2026-01">Investing</a>
+        <a class="ted-chip" href="http://192.168.4.1:8080/ted_mul_money_2026-01">Money</a>
+        <a class="ted-chip" href="http://192.168.4.1:8080/ted_mul_social-media_2026-02">Social Media</a>
+        <a class="ted-chip" href="http://192.168.4.1:8080/ted_mul_tech_2025-10">Technology</a>
+        <a class="ted-chip" href="http://192.168.4.1:8080/ted_mul_worklife_2026-02">Work & Life</a>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="bottom-strip">
+    <div class="strip-left">Jai Shree Ram — offline & free</div>
+    <div class="strip-right">SERVED BY <span>PI ZERO 2W</span> // 192.168.4.1</div>
+  </div>
+</div>
+
+<script>
+  // Clock
+  function updateClock() {
+    const now = new Date();
+    document.getElementById('clock').textContent = now.toTimeString().slice(0,8);
+    document.getElementById('dateDisplay').textContent = now.toDateString().toUpperCase();
+  }
+  updateClock();
+  setInterval(updateClock, 1000);
+
+  // Kiwix search — all your actual ZIM book IDs
+  const KIWIX_BASE = 'http://192.168.4.1:8080';
+
+  const sources = {
+    'wikipedia_en_top_maxi_2025-12':      'Wikipedia',
+    'medlineplus.gov_en_all_2025-01':     'MedlinePlus',
+    'fas-military-medicine_en_2025-06':   'Field Medicine',
+    'foss.cooking_en_all_2026-02':        'Cooking',
+    'anonymousplanet_en_all_2026-02':     'Anon Planet',
+    'restarters_en_all_maxi_2026-01':     'Restarters',
+    'ted_mul_entrepreneur_2026-01':       'TED Entrepreneur',
+    'ted_mul_ideas_2026-01':              'TED Ideas',
+    'ted_mul_investing_2026-01':          'TED Investing',
+    'ted_mul_money_2026-01':              'TED Money',
+    'ted_mul_social-media_2026-02':       'TED Social Media',
+    'ted_mul_tech_2025-10':              'TED Tech',
+    'ted_mul_worklife_2026-02':           'TED Work & Life',
+    'wikivoyage_en_all_nopic':            'WikiVoyage',
+    'freecodecamp_en_all_2025-11':        'FreeCodeCamp',
+  };
+
+  async function doSearch() {
+    const q = document.getElementById('searchInput').value.trim();
+    if (!q) return;
+
+    const loading = document.getElementById('loading');
+    const resultsDiv = document.getElementById('searchResults');
+    loading.classList.add('active');
+    resultsDiv.classList.remove('active');
+    resultsDiv.innerHTML = '';
+
+    try {
+      const bookIds = Object.keys(sources).join(',');
+      const resp = await fetch(`${KIWIX_BASE}/search?books=${bookIds}&lang=&pattern=${encodeURIComponent(q)}`);
+      const text = await resp.text();
+
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(text, 'text/html');
+      const links = doc.querySelectorAll('a[href]');
+
+      let html = '';
+      let count = 0;
+      links.forEach(link => {
+        if (count >= 12) return;
+        const href = link.getAttribute('href');
+        const title = link.textContent.trim();
+        if (!title || title.length < 3) return;
+        let src = 'LOCAL';
+        for (const [id, name] of Object.entries(sources)) {
+          if (href.includes(id)) { src = name; break; }
+        }
+        const fullHref = href.startsWith('http') ? href : KIWIX_BASE + href;
+        html += `<div class="result-item" onclick="window.location='${fullHref}'">
+          <div class="result-source">${src}</div>
+          <div>
+            <div class="result-title">${title}</div>
+            <div class="result-snippet">${fullHref.replace(KIWIX_BASE,'')}</div>
+          </div>
+        </div>`;
+        count++;
+      });
+
+      if (!html) {
+        html = `<div class="result-item"><div class="result-source">SYS</div><div><div class="result-title">No results found</div><div class="result-snippet">Try a different search term or browse a library directly.</div></div></div>`;
+      }
+
+      resultsDiv.innerHTML = html;
+      resultsDiv.classList.add('active');
+    } catch(e) {
+      resultsDiv.innerHTML = `<div class="result-item"><div class="result-source">ERR</div><div><div class="result-title">Could not reach Kiwix server</div><div class="result-snippet">Make sure kiwix-serve is running on port 8080. Error: ${e.message}</div></div></div>`;
+      resultsDiv.classList.add('active');
+    }
+
+    loading.classList.remove('active');
+  }
+
+  document.getElementById('searchInput').addEventListener('keydown', e => {
+    if (e.key === 'Enter') doSearch();
+  });
+</script>
+</body>
+</html>
